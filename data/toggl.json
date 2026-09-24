@@ -1,0 +1,42 @@
+{
+  "syncedAt": "2026-09-24T23:10:54Z",
+  "since": "2026-01-01",
+  "timezone": "America/New_York",
+  "projects": [
+    "german"
+  ],
+  "entries": [
+    {
+      "id": "toggl-german-2026-07-13",
+      "lang": "german",
+      "hours": 0.12,
+      "date": "2026-07-13",
+      "note": "1 Toggl session",
+      "source": "toggl"
+    },
+    {
+      "id": "toggl-german-2026-09-22",
+      "lang": "german",
+      "hours": 0.27,
+      "date": "2026-09-22",
+      "note": "anki 16m",
+      "source": "toggl"
+    },
+    {
+      "id": "toggl-german-2026-09-23",
+      "lang": "german",
+      "hours": 1.74,
+      "date": "2026-09-23",
+      "note": "exercises 47m \u00b7 listening 40m \u00b7 anki 17m",
+      "source": "toggl"
+    },
+    {
+      "id": "toggl-german-2026-09-24",
+      "lang": "german",
+      "hours": 0.89,
+      "date": "2026-09-24",
+      "note": "class 53m",
+      "source": "toggl"
+    }
+  ]
+}

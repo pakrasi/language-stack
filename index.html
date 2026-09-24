@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Language Stack</title>
+  <meta name="description" content="Hours-to-target tracker for a ten-language stack." />
+  <meta name="color-scheme" content="light dark" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M8 22h4v-8H8zm6 0h4V8h-4zm6 0h4v-5h-4z' fill='%23fff'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" aria-hidden="true" viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="7" fill="#2a78d6"/><path d="M8 22h4v-8H8zm6 0h4V8h-4zm6 0h4v-5h-4z" fill="#fff"/></svg>
+      <div>
+        <h1>Language Stack</h1>
+        <p class="tagline">Hours left until every language reaches its target level.</p>
+        <p class="sync" id="sync-status" hidden></p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button type="button" class="btn ghost" id="btn-export">Export</button>
+      <label class="btn ghost" for="file-import">Import<input type="file" id="file-import" accept="application/json,.json" hidden /></label>
+      <button type="button" class="btn ghost" id="btn-theme" aria-label="Toggle dark mode" title="Toggle dark mode">◐</button>
+    </div>
+  </header>
+
+  <main class="page">
+    <!-- Hero + stat tiles -->
+    <section class="hero-row" aria-label="Overview">
+      <div class="hero card">
+        <p class="label">Hours remaining across the stack</p>
+        <p class="hero-figure" id="hero-remaining">—</p>
+        <div class="meter meter-lg" role="progressbar" aria-labelledby="hero-remaining" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="hero-meter"><span class="meter-fill"></span></div>
+        <p class="hero-sub" id="hero-sub">—</p>
+      </div>
+      <div class="tiles">
+        <div class="tile card">
+          <p class="label">Logged in total</p>
+          <p class="tile-value" id="stat-total">—</p>
+          <p class="tile-note" id="stat-total-note">across all languages</p>
+        </div>
+        <div class="tile card">
+          <p class="label">Last 7 days</p>
+          <p class="tile-value" id="stat-week">—</p>
+          <p class="tile-note" id="stat-week-note">—</p>
+        </div>
+        <div class="tile card">
+          <p class="label">Study streak</p>
+          <p class="tile-value" id="stat-streak">—</p>
+          <p class="tile-note" id="stat-streak-note">consecutive days with a session</p>
+        </div>
+        <div class="tile card">
+          <p class="label">Targets reached</p>
+          <p class="tile-value" id="stat-done">—</p>
+          <p class="tile-note">of 9 with an hours target</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Log form -->
+    <section class="card log-card" aria-labelledby="log-title">
+      <h2 id="log-title">Log a session</h2>
+      <form id="log-form" class="log-form" autocomplete="off">
+        <div class="field">
+          <label for="f-lang">Language</label>
+          <select id="f-lang" name="lang" required></select>
+        </div>
+        <div class="field">
+          <label for="f-hours">Hours</label>
+          <input id="f-hours" name="hours" type="number" inputmode="decimal" min="0.05" max="24" step="0.05" placeholder="1.5" required />
+        </div>
+        <div class="field">
+          <label for="f-date">Date</label>
+          <input id="f-date" name="date" type="date" required />
+        </div>
+        <div class="field field-wide">
+          <label for="f-note">Note <span class="muted">(optional)</span></label>
+          <input id="f-note" name="note" type="text" maxlength="120" placeholder="Anki + Nicos Weg A2 lesson 4" />
+        </div>
+        <div class="field field-submit">
+          <button type="submit" class="btn primary">Add hours</button>
+        </div>
+      </form>
+      <div class="quick-row" aria-label="Quick add">
+        <span class="muted">Quick add to <strong id="quick-lang">German</strong> today:</span>
+        <button type="button" class="chip" data-quick="0.25">+15 min</button>
+        <button type="button" class="chip" data-quick="0.5">+30 min</button>
+        <button type="button" class="chip" data-quick="1">+1 h</button>
+        <button type="button" class="chip" data-quick="2">+2 h</button>
+      </div>
+      <p class="toast" id="toast" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- The reference table as live countdowns -->
+    <section class="card" aria-labelledby="stack-title">
+      <div class="section-head">
+        <h2 id="stack-title">The stack</h2>
+        <p class="muted">Target level and hours to get there, counting down as you log.</p>
+      </div>
+      <ol class="stack" id="stack"></ol>
+    </section>
+
+    <!-- Weekly chart -->
+    <section class="card" aria-labelledby="chart-title">
+      <div class="section-head">
+        <h2 id="chart-title">Hours per week</h2>
+        <div class="seg" role="group" aria-label="Chart language filter">
+          <button type="button" class="seg-btn is-active" data-chart-lang="all">All</button>
+          <button type="button" class="seg-btn" data-chart-lang="focus" id="chart-focus-btn">German</button>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <svg id="chart" class="chart" role="img" aria-labelledby="chart-title chart-desc" preserveAspectRatio="none"></svg>
+        <p id="chart-desc" class="sr-only">Bar chart of study hours per week over the last twelve weeks.</p>
+        <div class="tooltip" id="chart-tip" hidden></div>
+      </div>
+      <details class="table-view">
+        <summary>Table view</summary>
+        <table id="chart-table"><thead><tr><th scope="col">Week of</th><th scope="col" class="num">Hours</th></tr></thead><tbody></tbody></table>
+      </details>
+    </section>
+
+    <!-- Session log -->
+    <section class="card" aria-labelledby="history-title">
+      <div class="section-head">
+        <h2 id="history-title">Recent sessions</h2>
+        <button type="button" class="btn ghost danger" id="btn-reset">Clear all data</button>
+      </div>
+      <table class="history" id="history">
+        <thead><tr><th scope="col">Date</th><th scope="col">Language</th><th scope="col" class="num">Hours</th><th scope="col">Note</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <p class="empty muted" id="history-empty">No sessions yet. Log your first hour above — backdate an entry with a note like “prior study” to credit hours you already have. Toggl entries appear here automatically once synced.</p>
+    </section>
+  </main>
+
+  <footer class="foot muted">
+    Toggl hours are synced hourly by a GitHub Action (project name = language). Sessions logged here are stored only in this browser — use <strong>Export</strong> to back them up and <strong>Import</strong> to restore on another device. <strong>Clear all data</strong> only removes sessions logged here, never Toggl rows.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
