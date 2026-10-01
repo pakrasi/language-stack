@@ -42,6 +42,10 @@
   const fmtMonShort = d => d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
   const NB = ' ';
 
+  // Pace window. 7 days while tracking is new (started 2026-09-22); switch to 28 once it has settled.
+  const PACE_DAYS = 7;
+  const PACE_LABEL = PACE_DAYS === 7 ? 'last 7 days' : `last ${PACE_DAYS / 7} weeks`;
+
   // One number rule: under 100 one decimal (no trailing .0), 100 and up whole numbers.
   const fmtNum = n => {
     if (Math.abs(n) >= 99.95) return Math.round(n).toLocaleString();
@@ -247,9 +251,9 @@
     const today = parseIso(tIso);
     const target = parseIso(targetDate());
     const daysLeft = Math.round((target - today) / 864e5);
-    const since = isoLocal(addDays(today, -27));
-    const last28 = entries.filter(e => e.date >= since && e.date <= tIso).reduce((s, e) => s + e.hours, 0);
-    const pace = last28 / 4;
+    const since = isoLocal(addDays(today, -(PACE_DAYS - 1)));
+    const windowHours = entries.filter(e => e.date >= since && e.date <= tIso).reduce((s, e) => s + e.hours, 0);
+    const pace = windowHours / (PACE_DAYS / 7);
     const passed = daysLeft <= 0;
     const done = remaining === 0;
     const needed = !passed && !done ? remaining / (daysLeft / 7) : null;
@@ -282,7 +286,7 @@
 
     let finish = null;
     if (done) el.projection.textContent = '';
-    else if (pace <= 0) el.projection.textContent = 'No hours in the last 4 weeks, so no finish date yet.';
+    else if (pace <= 0) el.projection.textContent = `No hours in the ${PACE_LABEL}, so no finish date yet.`;
     else {
       finish = addDays(today, Math.ceil((remaining / pace) * 7));
       let rel = '';
@@ -291,7 +295,7 @@
         if (days > 0) rel = `, ${spanText(target, finish)} after the target date`;
         else if (days < 0) rel = `, ${spanText(finish, target)} before the target date`;
       }
-      el.projection.textContent = `At your 4-week pace you finish in ${fmtMonthYear(finish)}${rel}.`;
+      el.projection.textContent = `At your current pace you finish in ${fmtMonthYear(finish)}${rel}.`;
     }
     renderTimeline({ today, target, finish, passed, done });
     const ratio = done ? 1 : needed ? Math.min(1, pace / needed) : 0;
@@ -960,6 +964,7 @@
   });
   if (matchMedia('(hover: none)').matches) el.fieldHint.textContent = 'Tap a language for details.';
   buildField();
+  document.querySelectorAll('.pace-note-window').forEach(n => { n.textContent = `average of the ${PACE_LABEL}`; });
   render();
   if (state.entries.length) askPersist();
   if (loadProblem) {

@@ -29,7 +29,7 @@ Targets live in one place: the `LANGUAGES` array at the top of `app.js` (mirrore
 
 ## Target date
 
-The hero compares the hours needed per week to finish by a target date with your average over the last 4 weeks, and draws a timeline from today to the later of the target date and the projected finish at that pace. Set the date inline on the page; it is stored in `localStorage` under `language-stack.target-date` (default `2030-12-31`).
+The hero compares the hours needed per week to finish by a target date with your recent average (the last 7 days for now; `PACE_DAYS` in `app.js`, switch to 28 once tracking has settled), and draws a timeline from today to the later of the target date and the projected finish at that pace. Set the date inline on the page; it is stored in `localStorage` under `language-stack.target-date` (default `2030-12-31`).
 
 ## Design
 

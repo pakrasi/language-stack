@@ -337,7 +337,6 @@ select option { background: var(--page); color: var(--ink); }
 .run.is-sel .run-name { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .block-badge { position: relative; width: 28px; height: 28px; margin: -6px 0; flex: none; display: none; }
 .block-badge.is-live { display: block; }
-.field-native { font-size: 13px; margin-top: 4px; }
 
 .readout {
   margin: 2px 0 22px 244px; padding: 18px 0 18px 20px; border-left: 2px solid var(--ring);
