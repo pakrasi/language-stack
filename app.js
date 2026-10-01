@@ -21,6 +21,10 @@
   const STORE_KEY = 'language-stack.v1';
   const THEME_KEY = 'language-stack.theme';
 
+  // Helpers used by load()/sanitize() must exist before load() runs.
+  const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  const round2 = n => Math.round(n * 100) / 100;
+
   // ---------- state ----------
   let state = load();          // manual entries + focus, in localStorage
   let toggl = { entries: [], syncedAt: null }; // read-only, from data/toggl.json (GitHub Action)
@@ -47,8 +51,6 @@
   function save() {
     try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch { /* private mode etc. */ }
   }
-  const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-  const round2 = n => Math.round(n * 100) / 100;
 
   // ---------- date helpers (local time, ISO yyyy-mm-dd) ----------
   const pad = n => String(n).padStart(2, '0');
