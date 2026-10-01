@@ -20,6 +20,9 @@
 
   const STORE_KEY = 'language-stack.v1';
   const THEME_KEY = 'language-stack.theme';
+  const TARGET_KEY = 'language-stack.target-date'; // yyyy-mm-dd, set inline in the hero
+  const DEFAULT_TARGET = '2030-12-31';
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
   // Helpers used by load()/sanitize() must exist before load() runs.
   const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
@@ -91,7 +94,12 @@
   // ---------- DOM refs ----------
   const $ = sel => document.querySelector(sel);
   const el = {
-    heroRemaining: $('#hero-remaining'), heroMeter: $('#hero-meter'), heroSub: $('#hero-sub'),
+    heroRemaining: $('#hero-remaining'), heroSub: $('#hero-sub'),
+    paceNeeded: $('#pace-needed'), paceNeededBar: $('#pace-needed-bar'), paceNeededNote: $('#pace-needed-note'),
+    paceYours: $('#pace-yours'), paceYoursBar: $('#pace-yours-bar'), paceGap: $('#pace-gap'),
+    projection: $('#projection'), daysLeft: $('#days-left'), fTarget: $('#f-target'),
+    field: $('#field'), fieldReadout: $('#field-readout'), fieldTable: $('#field-table tbody'),
+    todayFill: $('#today-fill'), todayText: $('#today-text'), themeBtn: $('#btn-theme'),
     statTotal: $('#stat-total'), statTotalNote: $('#stat-total-note'),
     statWeek: $('#stat-week'), statWeekNote: $('#stat-week-note'),
     statStreak: $('#stat-streak'), statStreakNote: $('#stat-streak-note'), statDone: $('#stat-done'),
@@ -114,8 +122,8 @@
 
     // hero
     el.heroRemaining.innerHTML = `${fmtRem(remaining)}<small>h</small>`;
-    setMeter(el.heroMeter, pct, remaining === 0);
-    el.heroSub.textContent = `${fmtH(creditable)} of ${fmtH(STACK_TOTAL)} target hours done · ${pct.toFixed(1)}% of the stack`;
+    el.heroSub.textContent = `${fmt1(creditable)} of ${fmtH(STACK_TOTAL)} target hours done · ${pct.toFixed(1)}% of the stack`;
+    const pace = renderPace(remaining, entries);
 
     // tiles
     el.statTotal.innerHTML = `${fmtH(totalLogged)}<small>h</small>`;
@@ -142,8 +150,11 @@
     el.statDone.innerHTML = `${done}<small>/ 9</small>`;
 
     renderStack(logged);
+    renderField(logged);
     renderChart();
     renderHistory();
+    renderToday();
+    setAtmosphere(pace.ratio, pct);
     el.quickLang.textContent = BY_ID[state.focus].name;
     el.chartFocusBtn.textContent = BY_ID[state.focus].name;
     renderSync();
@@ -153,7 +164,7 @@
     if (!toggl.syncedAt) { el.sync.hidden = true; return; }
     const langs = (toggl.projects || []).map(id => BY_ID[id]?.name).filter(Boolean).join(', ');
     el.sync.hidden = false;
-    el.sync.innerHTML = `<span class="sync-dot" aria-hidden="true"></span>Toggl synced ${relTime(toggl.syncedAt)}${langs ? ` · projects: ${escapeHtml(langs)}` : ''}`;
+    el.sync.textContent = `Toggl synced ${relTime(toggl.syncedAt)}${langs ? ` · projects: ${langs}` : ''}`;
   }
   function relTime(iso) {
     const mins = Math.round((Date.now() - new Date(iso)) / 60000);
@@ -166,7 +177,7 @@
 
   function setMeter(meter, pct, done) {
     const p = Math.max(0, Math.min(100, pct));
-    meter.querySelector('.meter-fill').style.width = `${p}%`;
+    meter.querySelector('.meter-fill').style.transform = `scaleX(${p / 100})`;
     meter.setAttribute('aria-valuenow', p.toFixed(0));
     meter.classList.toggle('is-done', !!done);
   }
@@ -185,16 +196,234 @@
         <span class="lang-idx">${i + 1}</span>
         <span class="lang-name"><span class="lang-title">${l.name}${l.id === state.focus || isNative ? '' : `<button type="button" class="lang-focus-btn" data-focus="${l.id}">set focus</button>`}</span><span class="lang-level">${l.level}${l.id === state.focus ? ' · focus' : ''}</span></span>
         <span class="lang-meter">${isNative
-          ? 'Already there — nothing to count down.'
-          : `<span class="meter" role="progressbar" aria-label="${l.name} progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct.toFixed(0)}"><span class="meter-fill" style="width:${pct}%"></span></span>
+          ? 'Native. No hours to count down.'
+          : `<span class="meter" role="progressbar" aria-label="${l.name} progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct.toFixed(0)}"><span class="meter-fill" style="transform:scaleX(${pct / 100})"></span></span>
              <span class="lang-nums"><span>${fmtH(have)} h logged</span><span>${fmtH(l.target)} h target</span></span>`}</span>
         <span class="lang-remaining">${isNative
-          ? '<strong>—</strong><span>native</span>'
+          ? '<span>native</span>'
           : isDone ? '<strong>✓ done</strong><span>target reached</span>'
           : `<strong>${fmtRem(rem)}</strong><span>hours to go</span>`}</span>`;
       if (isDone) li.querySelector('.meter').classList.add('is-done');
       el.stack.appendChild(li);
     });
+  }
+
+  // ---------- pace + target date ----------
+  function targetDate() {
+    try { const v = localStorage.getItem(TARGET_KEY); if (/^\d{4}-\d{2}-\d{2}$/.test(v || '')) return v; } catch {}
+    return DEFAULT_TARGET;
+  }
+  const fmtMonthYear = d => d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+  function renderPace(remaining, entries) {
+    const today = parseIso(todayIso());
+    const daysLeft = Math.round((parseIso(targetDate()) - today) / 864e5);
+    const since = isoLocal(addDays(today, -27));
+    const last28 = entries.filter(e => e.date >= since && e.date <= todayIso()).reduce((s, e) => s + e.hours, 0);
+    const pace = last28 / 4;
+    const needed = daysLeft > 0 ? remaining / (daysLeft / 7) : null;
+
+    el.daysLeft.textContent = daysLeft > 0 ? daysLeft.toLocaleString() : '0';
+    el.paceYours.innerHTML = `${fmtPace(pace)}<small>h</small>`;
+    if (needed === null) {
+      el.paceNeeded.innerHTML = remaining > 0 ? `${fmtRem(remaining)}<small>h</small>` : `0<small>h</small>`;
+      el.paceNeededNote.textContent = remaining > 0 ? 'target date has passed' : 'all targets reached';
+    } else {
+      el.paceNeeded.innerHTML = `${fmtPace(needed)}<small>h</small>`;
+      el.paceNeededNote.textContent = 'to finish by the target date';
+    }
+    // Both bars share one scale so the gap reads at a glance.
+    const scale = Math.max(needed || 0, pace, 0.01);
+    el.paceNeededBar.style.transform = `scaleX(${(needed || 0) / scale})`;
+    el.paceYoursBar.style.transform = `scaleX(${pace / scale})`;
+
+    if (remaining === 0) el.paceGap.textContent = 'Every target is reached.';
+    else if (needed === null) el.paceGap.textContent = 'Pick a later target date to see the hours needed per week.';
+    else {
+      const diff = round2(needed - pace);
+      el.paceGap.textContent = diff > 0
+        ? `Short by ${fmtPace(diff)} h per week. Your pace is ${Math.round((pace / needed) * 100)}% of what's needed.`
+        : `Ahead by ${fmtPace(-diff)} h per week.`;
+    }
+
+    if (remaining === 0) el.projection.textContent = 'All targets reached.';
+    else if (pace <= 0) el.projection.textContent = 'Log a few weeks to see a projection.';
+    else {
+      const finish = addDays(today, Math.ceil((remaining / pace) * 7));
+      el.projection.textContent = `At your current pace you finish in ${fmtMonthYear(finish)}.`;
+    }
+    const ratio = remaining === 0 ? 1 : needed ? Math.min(1, pace / needed) : 0;
+    return { ratio };
+  }
+  const fmt1 = n => (Math.round(n * 10) / 10).toLocaleString();
+  const fmtPace = n => (n >= 10 ? (Math.round(n * 10) / 10).toLocaleString(undefined, { maximumFractionDigits: 1 }) : (Math.round(n * 10) / 10).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
+
+  // ---------- today strip ----------
+  function renderToday() {
+    const now = new Date();
+    const mid = new Date(now); mid.setHours(0, 0, 0, 0);
+    const frac = Math.min(1, (now - mid) / 864e5);
+    const mins = Math.round(allEntries().filter(e => e.date === todayIso()).reduce((s, e) => s + e.hours, 0) * 60);
+    el.todayFill.style.transform = `scaleX(${frac})`;
+    const logged = mins >= 60 ? `${fmtH(round2(mins / 60))} h logged` : `${mins} min logged`;
+    el.todayText.textContent = `Today: ${Math.floor(frac * 100)}% elapsed · ${logged}`;
+  }
+
+  // ---------- atmosphere palette (CSS fallback + fx.js canvas) ----------
+  // Cool and dim when behind the needed pace, warmer as the pace catches up.
+  // The third stop drifts toward a green finish tint as the stack fills.
+  const ATMO = {
+    dark:  { behind: ['#0a0a0c', '#0f1a30', '#09090a', '#17264a'], onPace: ['#0d0a08', '#3a2010', '#0b0908', '#5c3517'], finish: '#12301f' },
+    light: { behind: ['#f3efe7', '#dde3ea', '#f1ede5', '#d4dce5'], onPace: ['#f4eee4', '#f2d6b4', '#f2ebe0', '#ecc393'], finish: '#d3e5cf' },
+  };
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const mixHex = (a, b, t) => '#' + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
+  function setAtmosphere(ratio, pct) {
+    const theme = root.dataset.theme === 'light' ? 'light' : 'dark';
+    const p = ATMO[theme];
+    const t = Math.max(0, Math.min(1, ratio)) ** 1.6;
+    const colors = p.behind.map((c, i) => mixHex(c, p.onPace[i], t));
+    colors[2] = mixHex(colors[2], p.finish, Math.min(1, pct / 100) * 0.6);
+    colors.forEach((c, i) => root.style.setProperty(`--atmo-${i + 1}`, c));
+    const detail = { colors, ratio: t, pct, theme };
+    window.__stackAtmosphere = detail;
+    document.dispatchEvent(new CustomEvent('stack-stats', { detail }));
+  }
+
+  // ---------- the hour field: one cell per target hour ----------
+  const FIELD_LANGS = LANGUAGES.filter(l => l.target);
+  const fieldBlocks = {};
+  let fieldSel = null;
+  let fieldFill = {};      // lang -> creditable hours currently drawn
+  let flash = null;        // { lang, from, to, start }
+
+  function buildField() {
+    el.field.innerHTML = '';
+    for (const l of FIELD_LANGS) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'block';
+      b.dataset.lang = l.id;
+      b.innerHTML = `<span class="block-head"><span class="block-name">${l.name}</span><span class="block-badge" aria-hidden="true"></span><span class="block-nums"></span></span><canvas aria-hidden="true"></canvas>`;
+      b.addEventListener('pointerenter', ev => { if (ev.pointerType === 'mouse') showReadout(l.id); });
+      b.addEventListener('pointerleave', ev => { if (ev.pointerType === 'mouse') showReadout(fieldSel); });
+      b.addEventListener('focus', () => showReadout(l.id));
+      b.addEventListener('blur', () => showReadout(fieldSel));
+      b.addEventListener('click', () => {
+        fieldSel = fieldSel === l.id ? null : l.id;
+        for (const id in fieldBlocks) fieldBlocks[id].el.classList.toggle('is-sel', id === fieldSel);
+        el.field.classList.toggle('has-sel', !!fieldSel);
+        showReadout(fieldSel);
+      });
+      el.field.appendChild(b);
+      fieldBlocks[l.id] = { el: b, canvas: b.querySelector('canvas'), nums: b.querySelector('.block-nums'), lang: l };
+    }
+    if ('ResizeObserver' in window) {
+      let w = 0;
+      new ResizeObserver(([e]) => {
+        const nw = Math.round(e.contentRect.width);
+        if (nw !== w) { w = nw; drawField(); }
+      }).observe(el.field);
+    }
+  }
+
+  function renderField(logged) {
+    let filled = 0;
+    for (const l of FIELD_LANGS) {
+      const have = Math.min(logged[l.id], l.target);
+      filled += have;
+      fieldFill[l.id] = have;
+      const b = fieldBlocks[l.id];
+      b.nums.textContent = `${fmt1(have)} of ${fmtH(l.target)} h`;
+      b.el.classList.toggle('is-focus', l.id === state.focus);
+      b.el.classList.toggle('is-done', have >= l.target);
+      b.el.setAttribute('aria-label', `${l.name}: ${fmtH(have)} of ${fmtH(l.target)} hours logged`);
+    }
+    fieldFill.total = filled;
+    el.fieldTable.innerHTML = FIELD_LANGS.map(l => `<tr><th scope="row">${l.name}</th><td>${fmtH(fieldFill[l.id])} h</td><td>${fmtH(l.target)} h</td><td>${fmtH(round2(l.target - fieldFill[l.id]))} h</td></tr>`).join('');
+    showReadout(fieldSel);
+    drawField();
+  }
+
+  function showReadout(id) {
+    if (!id) {
+      el.fieldReadout.textContent = `One square per target hour. ${fmt1(fieldFill.total || 0)} of ${fmtH(STACK_TOTAL)} filled.`;
+      return;
+    }
+    const l = BY_ID[id], have = fieldFill[id] || 0;
+    el.fieldReadout.textContent = `${l.name} · ${l.level} · ${fmt1(have)} of ${fmtH(l.target)} h · ${fmtRem(l.target - have)} h left`;
+  }
+
+  function fieldGeometry(width) {
+    // Desktop cells 7 px with 2 px gaps; phones (one full-width column) 4 px with 1 px gaps.
+    const small = window.innerWidth <= 600 || width < 230;
+    const cell = small ? 4 : width < 300 ? 5 : 7;
+    const gap = small ? 1 : cell === 5 ? 1.5 : 2;
+    const pitch = cell + gap;
+    const cols = Math.max(1, Math.floor((width + gap) / pitch));
+    return { cell, gap, pitch, cols };
+  }
+
+  function cssVar(name) { return getComputedStyle(root).getPropertyValue(name).trim(); }
+
+  function drawField(now) {
+    const colors = { empty: cssVar('--cell-empty'), other: cssVar('--cell-other'), focus: cssVar('--cell-focus'), flash: cssVar('--cell-flash'), good: cssVar('--good') };
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const glow = root.dataset.theme !== 'light';
+    for (const l of FIELD_LANGS) {
+      const b = fieldBlocks[l.id];
+      const width = b.el.clientWidth;
+      if (!width) continue;
+      const g = fieldGeometry(width);
+      const rows = Math.ceil(l.target / g.cols);
+      const h = Math.ceil(rows * g.pitch - g.gap);
+      const cw = Math.round(width * dpr), ch = Math.round(h * dpr);
+      if (b.canvas.width !== cw || b.canvas.height !== ch) {
+        b.canvas.width = cw; b.canvas.height = ch; b.canvas.style.height = `${h}px`;
+      }
+      const ctx = b.canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, width, h);
+      const have = fieldFill[l.id] || 0;
+      const fill = have >= l.target ? colors.good : l.id === state.focus ? colors.focus : colors.other;
+      const full = Math.floor(have), part = have - full;
+      const fl = flash && flash.lang === l.id ? flash : null;
+      const pos = i => [(i % g.cols) * g.pitch, Math.floor(i / g.cols) * g.pitch];
+      ctx.fillStyle = colors.empty;
+      for (let i = Math.min(full, l.target); i < l.target; i++) { const [x, y] = pos(i); ctx.fillRect(x, y, g.cell, g.cell); }
+      // filled cells: a faint glow in the dark edition, flat ink in the light one
+      if (glow) { ctx.shadowColor = fill; ctx.shadowBlur = 5; }
+      ctx.fillStyle = fill;
+      for (let i = 0; i < full + (part > 0 ? 1 : 0) && i < l.target; i++) {
+        const [x, y] = pos(i);
+        ctx.fillRect(x, y, i < full ? g.cell : Math.max(1, g.cell * part), g.cell);
+      }
+      ctx.shadowBlur = 0;
+      for (let i = 0; fl && i < l.target; i++) {
+        const [x, y] = pos(i);
+        if (i < full || (i === full && part > 0)) {
+          if (i >= Math.floor(fl.from) && i < Math.ceil(fl.to)) {
+            // newly filled cells light up in order, then settle
+            const k = i - Math.floor(fl.from), n = Math.max(1, Math.ceil(fl.to) - Math.floor(fl.from));
+            const local = (now - fl.start - (k / n) * 500) / 700;
+            const a = local < 0 ? 0 : Math.max(0, 1 - local);
+            if (a > 0) { ctx.globalAlpha = a; ctx.fillStyle = colors.flash; ctx.fillRect(x - 0.5, y - 0.5, g.cell + 1, g.cell + 1); ctx.globalAlpha = 1; }
+          }
+        }
+      }
+    }
+  }
+
+  function flashField(lang, from, to) {
+    if (reduceMotion.matches || to <= from) return;
+    flash = { lang, from, to, start: performance.now() };
+    const step = now => {
+      if (!flash) return;
+      drawField(now);
+      if (now - flash.start < 1300) requestAnimationFrame(step);
+      else { flash = null; drawField(); }
+    };
+    requestAnimationFrame(step);
   }
 
   // ---------- chart: hours per week, last 12 weeks ----------
@@ -264,7 +493,7 @@
     });
     if (max === 0) svg.appendChild(mk('text', { class: 'nodata', x: padL + plotW / 2, y: padT + plotH / 2 }, 'No sessions in the last 12 weeks yet'));
 
-    el.chartTable.innerHTML = rows.map(d => `<tr><td>${fmtShort(d.start)} – ${fmtShort(addDays(d.start, 6))}</td><td class="num">${fmtH(d.hours)}</td></tr>`).join('');
+    el.chartTable.innerHTML = rows.map(d => `<tr><td>${fmtShort(d.start)} to ${fmtShort(addDays(d.start, 6))}</td><td class="num">${fmtH(d.hours)}</td></tr>`).join('');
   }
   function niceMax(v) {
     if (v <= 0) return 4;
@@ -276,7 +505,7 @@
   }
   function showTip(d, fx, fy) {
     const wrap = el.chart.getBoundingClientRect();
-    el.chartTip.innerHTML = `<strong>${fmtH(d.hours)} h</strong> · ${fmtShort(d.start)} – ${fmtShort(addDays(d.start, 6))}${chartLang === 'all' ? '' : ` · ${BY_ID[state.focus].name}`}`;
+    el.chartTip.innerHTML = `<strong>${fmtH(d.hours)} h</strong> · ${fmtShort(d.start)} to ${fmtShort(addDays(d.start, 6))}${chartLang === 'all' ? '' : ` · ${BY_ID[state.focus].name}`}`;
     el.chartTip.style.left = `${fx * wrap.width}px`;
     el.chartTip.style.top = `${Math.max(fy * wrap.height, 28)}px`;
     el.chartTip.hidden = false;
@@ -311,11 +540,19 @@
   function addEntry(lang, hours, date, note) {
     const entry = sanitize({ entries: [{ id: uid(), lang, hours, date, note }] })?.entries[0];
     if (!entry) return false;
+    const l = BY_ID[lang];
+    const before = loggedBy()[lang];
     state.entries.push(entry);
     save(); render();
-    const l = BY_ID[lang];
-    const rem = l.target ? Math.max(0, l.target - loggedBy()[lang]) : null;
-    toast(rem === null ? `Logged ${fmtH(hours)} h of ${l.name}.` : rem === 0 ? `Logged ${fmtH(hours)} h — ${l.name} target reached!` : `Logged ${fmtH(hours)} h of ${l.name}. ${fmtH(rem)} h to go.`);
+    const after = loggedBy()[lang];
+    const rem = l.target ? Math.max(0, l.target - after) : null;
+    toast(rem === null ? `Logged ${fmtH(hours)} h of ${l.name}.` : rem === 0 ? `Logged ${fmtH(hours)} h. ${l.name} target reached.` : `Logged ${fmtH(hours)} h of ${l.name}. ${fmtH(rem)} h to go.`);
+    if (l.target) flashField(lang, Math.min(before, l.target), Math.min(after, l.target));
+    // Hooks for fx.js (optional visual layer). Nothing here depends on it.
+    document.dispatchEvent(new CustomEvent('session-logged', { detail: { lang, hours } }));
+    if (l.target && before < l.target && after >= l.target) {
+      document.dispatchEvent(new CustomEvent('target-reached', { detail: { lang } }));
+    }
     return true;
   }
 
@@ -375,25 +612,43 @@
       state.entries.push(...added);
       save(); render();
       toast(`Imported ${added.length} new session${added.length === 1 ? '' : 's'}.`);
-    } catch { toast('Could not read that file — expected a Language Stack export.'); }
+    } catch { toast('Could not read that file. Expected a Language Stack export.'); }
     ev.target.value = '';
   });
 
   // ---------- theme ----------
+  // Dark is the default edition; the toggle stores an explicit choice.
   const root = document.documentElement;
-  try { const t = localStorage.getItem(THEME_KEY); if (t) root.dataset.theme = t; } catch {}
-  $('#btn-theme').addEventListener('click', () => {
-    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
-    root.dataset.theme = dark ? 'light' : 'dark';
+  try { const t = localStorage.getItem(THEME_KEY); if (t === 'light' || t === 'dark') root.dataset.theme = t; } catch {}
+  const syncThemeBtn = () => {
+    const light = root.dataset.theme === 'light';
+    el.themeBtn.setAttribute('aria-label', light ? 'Switch to dark mode' : 'Switch to light mode');
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', light ? '#f3efe7' : '#0b0a09');
+  };
+  el.themeBtn.addEventListener('click', () => {
+    root.dataset.theme = root.dataset.theme === 'light' ? 'dark' : 'light';
     try { localStorage.setItem(THEME_KEY, root.dataset.theme); } catch {}
+    syncThemeBtn();
+    render();
   });
+  syncThemeBtn();
 
   // ---------- init ----------
-  el.fLang.innerHTML = LANGUAGES.map(l => `<option value="${l.id}">${l.name} — ${l.level}${l.target ? ` (${l.target} h)` : ''}</option>`).join('');
+  el.fLang.innerHTML = LANGUAGES.map(l => `<option value="${l.id}">${l.name} · ${l.level}${l.target ? ` (${l.target} h)` : ''}</option>`).join('');
   el.fLang.value = state.focus;
   el.fDate.value = todayIso();
   el.fDate.max = todayIso();
+  el.fTarget.value = targetDate();
+  el.fTarget.min = todayIso();
+  el.fTarget.addEventListener('change', () => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(el.fTarget.value)) { el.fTarget.value = targetDate(); return; }
+    try { localStorage.setItem(TARGET_KEY, el.fTarget.value); } catch {}
+    render();
+  });
+  buildField();
   render();
+  setInterval(renderToday, 60 * 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) renderToday(); });
 
   // Toggl data is written to data/toggl.json by the scheduled GitHub Action.
   fetch(`data/toggl.json?t=${Date.now()}`, { cache: 'no-store' })

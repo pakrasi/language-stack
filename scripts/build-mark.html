@@ -1,0 +1,30 @@
+<!doctype html>
+<!--
+  Offline build step for assets/mark-processed.png (the liquid-metal logo mask).
+  Not loaded by the site. Run: scripts/build-mark.sh
+  It draws the bar-chart mark, runs Paper Shaders' toProcessedLiquidMetal on it,
+  and prints the resulting PNG as a data URL into #out.
+-->
+<meta charset="utf-8">
+<title>build mark</title>
+<textarea id="out"></textarea>
+<script type="module">
+  import { toProcessedLiquidMetal } from 'https://cdn.jsdelivr.net/npm/@paper-design/shaders@0.0.81/dist/shaders/liquid-metal.js';
+
+  // Same three bars as the header SVG (viewBox 32), drawn chunkier at 256 px.
+  const S = 256, c = document.createElement('canvas');
+  c.width = c.height = S;
+  const g = c.getContext('2d');
+  g.fillStyle = '#000';
+  const bars = [[36, 112], [106, 200], [176, 72]]; // [x, height]
+  const w = 48, base = 236, r = 12;
+  for (const [x, h] of bars) {
+    g.beginPath();
+    g.roundRect(x, base - h, w, h, [r, r, 4, 4]);
+    g.fill();
+  }
+  const blob = await toProcessedLiquidMetal(c.toDataURL('image/png'));
+  const fr = new FileReader();
+  fr.onload = () => { document.getElementById('out').textContent = fr.result; document.title = 'done'; };
+  fr.readAsDataURL(blob.pngBlob);
+</script>

@@ -26,6 +26,20 @@ Toggl's API only serves the last ~3 months, so the sync keeps older day-entries 
 
 Targets live in one place: the `LANGUAGES` array at the top of `app.js` (mirrored in `scripts/toggl_sync.py` for the name→language mapping).
 
+## Target date
+
+The hero compares the hours needed per week to finish by a target date with your average over the last 4 weeks. Set the date inline on the page; it is stored in `localStorage` under `language-stack.target-date` (default `2030-12-31`).
+
+## Visual layer
+
+`fx.js` is an optional ES module, loaded after first paint. It renders the background gradient and the header logo with [Paper Shaders](https://github.com/paper-design/shaders) (`@paper-design/shaders`, pinned in `PAPER_VERSION`, loaded file by file from jsDelivr). If WebGL2 or the CDN is unavailable, the page keeps a CSS gradient and the inline SVG logo. `app.js` only talks to it through DOM events (`stack-stats`, `session-logged`, `target-reached`).
+
+`assets/mark-processed.png` is the pre-processed logo mask. Rebuild it with `scripts/build-mark.sh` (headless Chrome + a local server).
+
+### Third-party notice
+
+Paper Shaders is © Paper Design and licensed under the Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0). This project loads it unmodified from jsDelivr and credits it in the page footer.
+
 ## Local preview
 
 ```sh

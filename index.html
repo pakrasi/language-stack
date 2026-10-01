@@ -1,85 +1,134 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Language Stack</title>
   <meta name="description" content="Hours-to-target tracker for a ten-language stack." />
-  <meta name="color-scheme" content="light dark" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M8 22h4v-8H8zm6 0h4V8h-4zm6 0h4v-5h-4z' fill='%23fff'/%3E%3C/svg%3E" />
+  <meta name="color-scheme" content="dark light" />
+  <meta name="theme-color" content="#0b0a09" />
+  <script>try { var t = localStorage.getItem('language-stack.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0a09'/%3E%3Cpath d='M8 22h4v-8H8zm6 0h4V8h-4zm6 0h4v-5h-4z' fill='%23f3a640'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,200..500&display=swap" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <div class="atmo" id="atmo" aria-hidden="true"></div>
+  <div class="grain" aria-hidden="true"></div>
+
   <header class="topbar">
-    <div class="brand">
-      <svg class="brand-mark" aria-hidden="true" viewBox="0 0 32 32" width="28" height="28"><rect width="32" height="32" rx="7" fill="#2a78d6"/><path d="M8 22h4v-8H8zm6 0h4V8h-4zm6 0h4v-5h-4z" fill="#fff"/></svg>
-      <div>
+    <div class="today" aria-hidden="true"><span class="today-fill" id="today-fill"></span></div>
+    <div class="topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" id="brand-mark">
+          <svg aria-hidden="true" viewBox="0 0 32 32" width="26" height="26"><path d="M8 22h4v-8H8zm6 0h4V8h-4zm6 0h4v-5h-4z" fill="currentColor"/></svg>
+        </span>
         <h1>Language Stack</h1>
-        <p class="tagline">Hours left until every language reaches its target level.</p>
-        <p class="sync" id="sync-status" hidden></p>
       </div>
-    </div>
-    <div class="topbar-actions">
-      <button type="button" class="btn ghost" id="btn-export">Export</button>
-      <label class="btn ghost" for="file-import">Import<input type="file" id="file-import" accept="application/json,.json" hidden /></label>
-      <button type="button" class="btn ghost" id="btn-theme" aria-label="Toggle dark mode" title="Toggle dark mode">◐</button>
+      <p class="today-text" id="today-text"></p>
+      <div class="topbar-actions">
+        <button type="button" class="btn ghost small" id="btn-export">Export</button>
+        <label class="btn ghost small" for="file-import">Import<input type="file" id="file-import" accept="application/json,.json" hidden /></label>
+        <button type="button" class="btn ghost small icon" id="btn-theme" aria-label="Switch to light mode" title="Switch theme">◐</button>
+      </div>
     </div>
   </header>
 
   <main class="page">
-    <!-- Hero + stat tiles -->
-    <section class="hero-row" aria-label="Overview">
-      <div class="hero card">
-        <p class="label">Hours remaining across the stack</p>
-        <p class="hero-figure" id="hero-remaining">—</p>
-        <div class="meter meter-lg" role="progressbar" aria-labelledby="hero-remaining" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="hero-meter"><span class="meter-fill"></span></div>
-        <p class="hero-sub" id="hero-sub">—</p>
+    <section class="hero" aria-label="Overview">
+      <div class="hero-main">
+        <p class="label">Hours left</p>
+        <p class="hero-figure" id="hero-remaining"></p>
+        <p class="hero-sub" id="hero-sub"></p>
+        <p class="sync" id="sync-status" hidden></p>
       </div>
-      <div class="tiles">
-        <div class="tile card">
-          <p class="label">Logged in total</p>
-          <p class="tile-value" id="stat-total">—</p>
-          <p class="tile-note" id="stat-total-note">across all languages</p>
+
+      <div class="pace" aria-label="Pace">
+        <div class="pace-row is-needed">
+          <p class="label">Needed per week</p>
+          <p class="pace-val" id="pace-needed"></p>
+          <div class="pace-bar" aria-hidden="true"><span id="pace-needed-bar"></span></div>
+          <p class="pace-note" id="pace-needed-note">to finish by the target date</p>
         </div>
-        <div class="tile card">
-          <p class="label">Last 7 days</p>
-          <p class="tile-value" id="stat-week">—</p>
-          <p class="tile-note" id="stat-week-note">—</p>
+        <div class="pace-row is-yours">
+          <p class="label">Your pace</p>
+          <p class="pace-val" id="pace-yours"></p>
+          <div class="pace-bar" aria-hidden="true"><span id="pace-yours-bar"></span></div>
+          <p class="pace-note">weekly average, last 4 weeks</p>
         </div>
-        <div class="tile card">
-          <p class="label">Study streak</p>
-          <p class="tile-value" id="stat-streak">—</p>
-          <p class="tile-note" id="stat-streak-note">consecutive days with a session</p>
-        </div>
-        <div class="tile card">
-          <p class="label">Targets reached</p>
-          <p class="tile-value" id="stat-done">—</p>
-          <p class="tile-note">of 9 with an hours target</p>
+        <p class="pace-gap" id="pace-gap"></p>
+        <p class="projection" id="projection"></p>
+        <div class="target">
+          <div>
+            <p class="label">Days to target date</p>
+            <p class="target-val" id="days-left"></p>
+          </div>
+          <div>
+            <label class="label" for="f-target">Target date</label>
+            <input id="f-target" type="date" class="target-input" required />
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Log form -->
-    <section class="card log-card" aria-labelledby="log-title">
+    <section class="field-sec" aria-labelledby="field-title">
+      <div class="section-head">
+        <h2 id="field-title">Target hours</h2>
+        <p class="field-readout" id="field-readout" aria-live="polite"></p>
+      </div>
+      <div class="field" id="field" role="group" aria-labelledby="field-title"></div>
+      <table class="sr-only" id="field-table">
+        <caption>Target hours by language</caption>
+        <thead><tr><th scope="col">Language</th><th scope="col">Logged</th><th scope="col">Target</th><th scope="col">Left</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="stats" aria-label="Totals">
+      <div class="stat">
+        <p class="label">Logged in total</p>
+        <p class="stat-value" id="stat-total"></p>
+        <p class="stat-note" id="stat-total-note">across all languages</p>
+      </div>
+      <div class="stat">
+        <p class="label">Last 7 days</p>
+        <p class="stat-value" id="stat-week"></p>
+        <p class="stat-note" id="stat-week-note"></p>
+      </div>
+      <div class="stat">
+        <p class="label">Study streak</p>
+        <p class="stat-value" id="stat-streak"></p>
+        <p class="stat-note" id="stat-streak-note">consecutive days with a session</p>
+      </div>
+      <div class="stat">
+        <p class="label">Targets reached</p>
+        <p class="stat-value" id="stat-done"></p>
+        <p class="stat-note">of 9 with an hours target</p>
+      </div>
+    </section>
+
+    <section class="sheet log-card" aria-labelledby="log-title">
       <h2 id="log-title">Log a session</h2>
       <form id="log-form" class="log-form" autocomplete="off">
-        <div class="field">
+        <div class="field-in">
           <label for="f-lang">Language</label>
           <select id="f-lang" name="lang" required></select>
         </div>
-        <div class="field">
+        <div class="field-in">
           <label for="f-hours">Hours</label>
           <input id="f-hours" name="hours" type="number" inputmode="decimal" min="0.05" max="24" step="0.05" placeholder="1.5" required />
         </div>
-        <div class="field">
+        <div class="field-in">
           <label for="f-date">Date</label>
           <input id="f-date" name="date" type="date" required />
         </div>
-        <div class="field field-wide">
+        <div class="field-in field-wide">
           <label for="f-note">Note <span class="muted">(optional)</span></label>
           <input id="f-note" name="note" type="text" maxlength="120" placeholder="Anki + Nicos Weg A2 lesson 4" />
         </div>
-        <div class="field field-submit">
+        <div class="field-in field-submit">
           <button type="submit" class="btn primary">Add hours</button>
         </div>
       </form>
@@ -93,17 +142,15 @@
       <p class="toast" id="toast" role="status" aria-live="polite"></p>
     </section>
 
-    <!-- The reference table as live countdowns -->
-    <section class="card" aria-labelledby="stack-title">
+    <section class="panel" aria-labelledby="stack-title">
       <div class="section-head">
         <h2 id="stack-title">The stack</h2>
-        <p class="muted">Target level and hours to get there, counting down as you log.</p>
+        <p class="muted">Target level and hours to get there.</p>
       </div>
       <ol class="stack" id="stack"></ol>
     </section>
 
-    <!-- Weekly chart -->
-    <section class="card" aria-labelledby="chart-title">
+    <section class="panel" aria-labelledby="chart-title">
       <div class="section-head">
         <h2 id="chart-title">Hours per week</h2>
         <div class="seg" role="group" aria-label="Chart language filter">
@@ -122,24 +169,25 @@
       </details>
     </section>
 
-    <!-- Session log -->
-    <section class="card" aria-labelledby="history-title">
+    <section class="panel" aria-labelledby="history-title">
       <div class="section-head">
         <h2 id="history-title">Recent sessions</h2>
-        <button type="button" class="btn ghost danger" id="btn-reset">Clear all data</button>
+        <button type="button" class="btn ghost small danger" id="btn-reset">Clear all data</button>
       </div>
       <table class="history" id="history">
         <thead><tr><th scope="col">Date</th><th scope="col">Language</th><th scope="col" class="num">Hours</th><th scope="col">Note</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
         <tbody></tbody>
       </table>
-      <p class="empty muted" id="history-empty">No sessions yet. Log your first hour above — backdate an entry with a note like “prior study” to credit hours you already have. Toggl entries appear here automatically once synced.</p>
+      <p class="empty muted" id="history-empty">No sessions yet. Log your first hour above. To credit hours you already have, backdate an entry with a note like “prior study”. Toggl entries appear here automatically once synced.</p>
     </section>
   </main>
 
   <footer class="foot muted">
-    Toggl hours are synced hourly by a GitHub Action (project name = language). Sessions logged here are stored only in this browser — use <strong>Export</strong> to back them up and <strong>Import</strong> to restore on another device. <strong>Clear all data</strong> only removes sessions logged here, never Toggl rows.
+    <p>Toggl hours are synced hourly by a GitHub Action (project name = language). Sessions logged here are stored only in this browser. Use <strong>Export</strong> to back them up and <strong>Import</strong> to restore on another device. <strong>Clear all data</strong> only removes sessions logged here, never Toggl rows.</p>
+    <p>Background and logo rendered with <a href="https://github.com/paper-design/shaders">Paper Shaders</a> (Apache-2.0).</p>
   </footer>
 
   <script src="app.js"></script>
+  <script type="module" src="fx.js"></script>
 </body>
 </html>
