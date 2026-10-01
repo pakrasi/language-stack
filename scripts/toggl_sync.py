@@ -90,7 +90,7 @@ def main():
     out_entries = list(archived)
     for (day, lang), b in sorted(buckets.items()):
         tags = sorted(b["tags"].items(), key=lambda kv: -kv[1])
-        note = " · ".join(f"{t} {fmt_dur(s)}" for t, s in tags) if tags else f"{b['count']} Toggl session{'s' if b['count'] != 1 else ''}"
+        note = " · ".join(f"{t} {fmt_dur(s)}" for t, s in tags) if tags else "Toggl, no tags"
         out_entries.append({
             "id": f"toggl-{lang}-{day}",
             "lang": lang,
