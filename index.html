@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Language Stack</title>
-  <meta name="description" content="Hours-to-target tracker for a ten-language stack." />
+  <meta name="description" content="Study hours left until each of my ten languages reaches its target level." />
   <meta name="color-scheme" content="dark light" />
   <meta name="theme-color" content="#0b0a09" />
   <script>try { var t = localStorage.getItem('language-stack.theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}</script>
@@ -15,110 +15,99 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <a class="skip" href="#main">Skip to content</a>
   <div class="atmo" id="atmo" aria-hidden="true"></div>
   <div class="grain" aria-hidden="true"></div>
 
   <header class="topbar">
-    <div class="today" aria-hidden="true"><span class="today-fill" id="today-fill"></span></div>
     <div class="topbar-inner">
       <div class="brand">
         <span class="brand-mark" id="brand-mark">
-          <svg aria-hidden="true" viewBox="0 0 32 32" width="26" height="26"><path d="M8 22h4v-8H8zm6 0h4V8h-4zm6 0h4v-5h-4z" fill="currentColor"/></svg>
+          <svg aria-hidden="true" viewBox="0 0 32 32" width="28" height="28"><path d="M8 22h4v-8H8zm6 0h4V8h-4zm6 0h4v-5h-4z" fill="currentColor"/></svg>
         </span>
         <h1>Language Stack</h1>
       </div>
-      <p class="today-text" id="today-text"></p>
-      <div class="topbar-actions">
-        <button type="button" class="btn ghost small" id="btn-export">Export</button>
-        <label class="btn ghost small" for="file-import">Import<input type="file" id="file-import" accept="application/json,.json" hidden /></label>
-        <button type="button" class="btn ghost small icon" id="btn-theme" aria-label="Switch to light mode" title="Switch theme">◐</button>
-      </div>
+      <button type="button" class="icon-btn theme-btn" id="btn-theme" aria-label="Switch to light mode">
+        <svg aria-hidden="true" viewBox="0 0 20 20" width="18" height="18"><circle cx="10" cy="10" r="7.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M10 2.75a7.25 7.25 0 0 1 0 14.5z" fill="currentColor"/></svg>
+      </button>
     </div>
   </header>
 
-  <main class="page">
-    <section class="hero" aria-label="Overview">
+  <main class="page" id="main">
+    <section class="hero" aria-labelledby="hero-label">
       <div class="hero-main">
-        <p class="label">Hours left</p>
+        <p class="hero-label" id="hero-label">Hours left</p>
         <p class="hero-figure" id="hero-remaining"></p>
         <p class="hero-sub" id="hero-sub"></p>
         <p class="sync" id="sync-status" hidden></p>
       </div>
 
-      <div class="pace" aria-label="Pace">
-        <div class="pace-row is-needed">
-          <p class="label">Needed per week</p>
-          <p class="pace-val" id="pace-needed"></p>
-          <div class="pace-bar" aria-hidden="true"><span id="pace-needed-bar"></span></div>
-          <p class="pace-note" id="pace-needed-note">to finish by the target date</p>
-        </div>
-        <div class="pace-row is-yours">
-          <p class="label">Your pace</p>
-          <p class="pace-val" id="pace-yours"></p>
-          <div class="pace-bar" aria-hidden="true"><span id="pace-yours-bar"></span></div>
-          <p class="pace-note">weekly average, last 4 weeks</p>
+      <div class="pace">
+        <div class="pace-pair" id="pace-pair">
+          <div class="pace-row is-needed">
+            <p class="label">Needed per week</p>
+            <p class="pace-val" id="pace-needed"></p>
+            <div class="pace-bar" aria-hidden="true"><span id="pace-needed-bar"></span></div>
+            <p class="pace-note" id="pace-needed-note"></p>
+          </div>
+          <div class="pace-row is-yours">
+            <p class="label">Your pace</p>
+            <p class="pace-val" id="pace-yours"></p>
+            <div class="pace-bar" aria-hidden="true"><span id="pace-yours-bar"></span></div>
+            <p class="pace-note">average of the last 4 weeks</p>
+          </div>
         </div>
         <p class="pace-gap" id="pace-gap"></p>
-        <p class="projection" id="projection"></p>
-        <div class="target">
-          <div>
-            <p class="label">Days to target date</p>
-            <p class="target-val" id="days-left"></p>
+      </div>
+
+      <div class="time">
+        <div class="today-row">
+          <p class="today-label">Today</p>
+          <div class="today-track" id="today-track" role="img"><span class="today-elapsed" id="today-elapsed"></span><span class="today-logged" id="today-logged"></span></div>
+          <p class="today-text" id="today-text"></p>
+        </div>
+        <div class="timeline" id="timeline" role="img"></div>
+        <div class="time-foot">
+          <div class="days">
+            <p class="label">Days left</p>
+            <p class="days-val" id="days-left"></p>
           </div>
-          <div>
+          <p class="projection" id="projection"></p>
+          <div class="target-edit">
             <label class="label" for="f-target">Target date</label>
-            <input id="f-target" type="date" class="target-input" required />
+            <input id="f-target" type="date" />
           </div>
         </div>
       </div>
     </section>
 
-    <section class="field-sec" aria-labelledby="field-title">
-      <div class="section-head">
-        <h2 id="field-title">Target hours</h2>
-        <p class="field-readout" id="field-readout" aria-live="polite"></p>
+    <section class="sheet log" aria-labelledby="log-title">
+      <div class="log-head">
+        <h2 id="log-title">Log a session</h2>
+        <p class="muted">For study you didn’t track in Toggl.</p>
       </div>
-      <div class="field" id="field" role="group" aria-labelledby="field-title"></div>
-      <table class="sr-only" id="field-table">
-        <caption>Target hours by language</caption>
-        <thead><tr><th scope="col">Language</th><th scope="col">Logged</th><th scope="col">Target</th><th scope="col">Left</th></tr></thead>
-        <tbody></tbody>
-      </table>
-    </section>
-
-    <section class="stats" aria-label="Totals">
-      <div class="stat">
-        <p class="label">Logged in total</p>
-        <p class="stat-value" id="stat-total"></p>
-        <p class="stat-note" id="stat-total-note">across all languages</p>
+      <div class="quick" id="quick" role="group" aria-labelledby="quick-label">
+        <p class="quick-label" id="quick-label">Add to <strong id="quick-lang">German</strong> today:</p>
+        <div class="chips">
+          <button type="button" class="chip" data-quick="0.25">+15 min</button>
+          <button type="button" class="chip" data-quick="0.5">+30 min</button>
+          <button type="button" class="chip" data-quick="1">+1 h</button>
+          <button type="button" class="chip" data-quick="2">+2 h</button>
+          <button type="button" class="chip chip-other" id="btn-other" aria-expanded="false" aria-controls="log-form">Other…</button>
+        </div>
       </div>
-      <div class="stat">
-        <p class="label">Last 7 days</p>
-        <p class="stat-value" id="stat-week"></p>
-        <p class="stat-note" id="stat-week-note"></p>
+      <div class="quick next-focus" id="next-focus" role="group" aria-labelledby="next-label" hidden>
+        <p class="quick-label" id="next-label"></p>
+        <div class="chips" id="next-chips"></div>
       </div>
-      <div class="stat">
-        <p class="label">Study streak</p>
-        <p class="stat-value" id="stat-streak"></p>
-        <p class="stat-note" id="stat-streak-note">consecutive days with a session</p>
-      </div>
-      <div class="stat">
-        <p class="label">Targets reached</p>
-        <p class="stat-value" id="stat-done"></p>
-        <p class="stat-note">of 9 with an hours target</p>
-      </div>
-    </section>
-
-    <section class="sheet log-card" aria-labelledby="log-title">
-      <h2 id="log-title">Log a session</h2>
-      <form id="log-form" class="log-form" autocomplete="off">
+      <form id="log-form" class="log-form" autocomplete="off" hidden>
         <div class="field-in">
           <label for="f-lang">Language</label>
           <select id="f-lang" name="lang" required></select>
         </div>
         <div class="field-in">
           <label for="f-hours">Hours</label>
-          <input id="f-hours" name="hours" type="number" inputmode="decimal" min="0.05" max="24" step="0.05" placeholder="1.5" required />
+          <input id="f-hours" name="hours" type="number" inputmode="decimal" min="0.01" max="24" step="any" required />
         </div>
         <div class="field-in">
           <label for="f-date">Date</label>
@@ -126,66 +115,115 @@
         </div>
         <div class="field-in field-wide">
           <label for="f-note">Note <span class="muted">(optional)</span></label>
-          <input id="f-note" name="note" type="text" maxlength="120" placeholder="Anki + Nicos Weg A2 lesson 4" />
+          <input id="f-note" name="note" type="text" maxlength="120" placeholder="e.g. Anki, class, listening" />
         </div>
         <div class="field-in field-submit">
-          <button type="submit" class="btn primary">Add hours</button>
+          <button type="submit" class="btn primary">Log hours</button>
         </div>
       </form>
-      <div class="quick-row" aria-label="Quick add">
-        <span class="muted">Quick add to <strong id="quick-lang">German</strong> today:</span>
-        <button type="button" class="chip" data-quick="0.25">+15 min</button>
-        <button type="button" class="chip" data-quick="0.5">+30 min</button>
-        <button type="button" class="chip" data-quick="1">+1 h</button>
-        <button type="button" class="chip" data-quick="2">+2 h</button>
-      </div>
-      <p class="toast" id="toast" role="status" aria-live="polite"></p>
     </section>
 
-    <section class="panel" aria-labelledby="stack-title">
+    <section class="field-sec" aria-labelledby="field-title">
       <div class="section-head">
-        <h2 id="stack-title">The stack</h2>
-        <p class="muted">Target level and hours to get there.</p>
+        <h2 id="field-title">Target hours</h2>
+        <p class="legend"><span class="sw sw-empty" aria-hidden="true"></span>Each square is one target hour. <span class="sw sw-lit" aria-hidden="true"></span>Logged</p>
       </div>
-      <ol class="stack" id="stack"></ol>
+      <p class="field-hint muted" id="field-hint">Select a language for details.</p>
+      <div class="field" id="field" role="group" aria-labelledby="field-title"></div>
+      <div class="readout" id="readout" role="region" aria-labelledby="ro-name" hidden>
+        <div class="ro-head">
+          <h3 id="ro-name"></h3>
+          <p class="ro-level" id="ro-level"></p>
+        </div>
+        <dl class="ro-stats">
+          <div><dt>Logged</dt><dd id="ro-logged"></dd></div>
+          <div><dt>Target</dt><dd id="ro-target"></dd></div>
+          <div><dt>Left</dt><dd id="ro-left"></dd></div>
+        </dl>
+        <p class="ro-reached" id="ro-reached" hidden></p>
+        <div class="ro-actions">
+          <button type="button" class="btn" id="ro-focus">Make focus</button>
+          <p class="ro-is-focus" id="ro-is-focus" hidden>Focus language</p>
+        </div>
+        <form class="ro-start" id="ro-start" autocomplete="off">
+          <label for="f-start">Hours before tracking</label>
+          <div class="ro-start-row">
+            <input id="f-start" type="number" inputmode="decimal" min="0" max="5000" step="any" />
+            <button type="submit" class="btn">Save</button>
+          </div>
+          <p class="ro-note">Counted toward hours done. Left out of your pace and the weekly chart.</p>
+        </form>
+      </div>
+      <p class="field-native muted">English: native, no target.</p>
+      <details class="table-view">
+        <summary>Show as table</summary>
+        <table id="field-table">
+          <thead><tr><th scope="col">Language</th><th scope="col">Target level</th><th scope="col" class="num">Logged</th><th scope="col" class="num">Target</th><th scope="col" class="num">Left</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </details>
     </section>
 
-    <section class="panel" aria-labelledby="chart-title">
-      <div class="section-head">
-        <h2 id="chart-title">Hours per week</h2>
-        <div class="seg" role="group" aria-label="Chart language filter">
-          <button type="button" class="seg-btn is-active" data-chart-lang="all">All</button>
-          <button type="button" class="seg-btn" data-chart-lang="focus" id="chart-focus-btn">German</button>
+    <section class="sec week" aria-labelledby="week-title">
+      <h2 id="week-title">This week</h2>
+      <div class="week-stats">
+        <div class="stat">
+          <p class="label">Last 7 days</p>
+          <p class="stat-value" id="stat-week"></p>
+          <p class="stat-note" id="stat-week-note"></p>
+        </div>
+        <div class="stat">
+          <p class="label">Study streak</p>
+          <p class="stat-value" id="stat-streak"></p>
+          <p class="stat-note" id="stat-streak-note"></p>
+        </div>
+      </div>
+      <div class="chart-head">
+        <h3 id="chart-title">Hours per week</h3>
+        <div class="seg" role="group" aria-label="Show hours for">
+          <button type="button" class="seg-btn" data-chart-lang="all" aria-pressed="true">All</button>
+          <button type="button" class="seg-btn" data-chart-lang="focus" id="chart-focus-btn" aria-pressed="false">German</button>
         </div>
       </div>
       <div class="chart-wrap">
-        <svg id="chart" class="chart" role="img" aria-labelledby="chart-title chart-desc" preserveAspectRatio="none"></svg>
+        <svg id="chart" class="chart" role="img" aria-labelledby="chart-title chart-desc"></svg>
         <p id="chart-desc" class="sr-only">Bar chart of study hours per week over the last twelve weeks.</p>
         <div class="tooltip" id="chart-tip" hidden></div>
       </div>
       <details class="table-view">
-        <summary>Table view</summary>
+        <summary>Show as table</summary>
         <table id="chart-table"><thead><tr><th scope="col">Week of</th><th scope="col" class="num">Hours</th></tr></thead><tbody></tbody></table>
       </details>
     </section>
 
-    <section class="panel" aria-labelledby="history-title">
-      <div class="section-head">
-        <h2 id="history-title">Recent sessions</h2>
-        <button type="button" class="btn ghost small danger" id="btn-reset">Clear all data</button>
-      </div>
-      <table class="history" id="history">
+    <section class="sec" aria-labelledby="history-title">
+      <h2 id="history-title" tabindex="-1">Sessions</h2>
+      <table class="history" id="history" hidden>
         <thead><tr><th scope="col">Date</th><th scope="col">Language</th><th scope="col" class="num">Hours</th><th scope="col">Note</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
         <tbody></tbody>
       </table>
-      <p class="empty muted" id="history-empty">No sessions yet. Log your first hour above. To credit hours you already have, backdate an entry with a note like “prior study”. Toggl entries appear here automatically once synced.</p>
+      <p class="empty muted" id="history-empty">No sessions yet. Log your first hour above. Toggl hours appear here after the next hourly sync.</p>
+      <button type="button" class="btn ghost" id="btn-show-all" hidden></button>
     </section>
   </main>
 
-  <footer class="foot muted">
-    <p>Toggl hours are synced hourly by a GitHub Action (project name = language). Sessions logged here are stored only in this browser. Use <strong>Export</strong> to back them up and <strong>Import</strong> to restore on another device. <strong>Clear all data</strong> only removes sessions logged here, never Toggl rows.</p>
-    <p>Background and logo rendered with <a href="https://github.com/paper-design/shaders">Paper Shaders</a> (Apache-2.0).</p>
+  <footer class="foot">
+    <section class="data" aria-labelledby="data-title">
+      <h2 id="data-title">Data</h2>
+      <p class="data-split" id="data-split"></p>
+      <div class="data-actions">
+        <button type="button" class="btn" id="btn-export">Export</button>
+        <button type="button" class="btn" id="btn-import">Import</button>
+        <input type="file" id="file-import" class="sr-only" accept="application/json,.json" tabindex="-1" aria-hidden="true" />
+        <button type="button" class="btn danger" id="btn-reset">Delete sessions logged here</button>
+      </div>
+      <p class="muted data-note" id="reset-note" hidden>Nothing logged here yet.</p>
+    </section>
+    <p class="muted">Toggl hours sync every hour. A Toggl project counts when its name matches a language, e.g. “German”. Sessions logged on this page are saved in this browser only. Export them to keep a copy or move them to another device.</p>
+    <p class="muted">Background and logo rendered with <a href="https://github.com/paper-design/shaders">Paper Shaders</a> (Apache-2.0).</p>
   </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="app.js"></script>
   <script type="module" src="fx.js"></script>

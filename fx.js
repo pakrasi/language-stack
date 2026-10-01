@@ -15,12 +15,13 @@ const root = document.documentElement;
 let P = null;             // loaded Paper modules
 let bg = null, mark = null, badge = null;
 let markImage = null, blankImage = null;
+let badgeTimer = 0;
 const live = new Set();
 
 const MARK_COLORS = {
   // back = colour outside the shape (kept transparent); tint colours the metal
-  dark:  { back: '#00000000', tint: '#ffe1b3' },
-  light: { back: '#00000000', tint: '#e0763a' },
+  dark:  { back: '#00000000', tint: '#ffd9a0' },
+  light: { back: '#00000000', tint: '#b8551f' },
 };
 const theme = () => (root.dataset.theme === 'light' ? 'light' : 'dark');
 
@@ -115,7 +116,7 @@ function breathe(m, peak, holdMs) {
 /* ---------- background mesh gradient ---------- */
 function bgColors() {
   const a = window.__stackAtmosphere;
-  const fallback = theme() === 'light' ? ['#f3efe7', '#dde3ea', '#f1ede5', '#d4dce5'] : ['#0b0a0b', '#121b2c', '#0a0909', '#1b2539'];
+  const fallback = theme() === 'light' ? ['#f3efe7', '#e9e6e0', '#f2eee6', '#e3e2df'] : ['#0b0a0b', '#121b2c', '#0a0909', '#1b2539'];
   return (a && a.colors ? a.colors : fallback).map(P.getShaderColorFromString);
 }
 
@@ -125,7 +126,7 @@ function mountBackground() {
   const colors = bgColors();
   bg = create('bg', el, P.meshGradientFragmentShader, {
     u_colors: colors, u_colorsCount: colors.length,
-    u_distortion: 0.85, u_swirl: 0.35, u_grainMixer: 0, u_grainOverlay: 0,
+    u_distortion: 0.6, u_swirl: 0.2, u_grainMixer: 0, u_grainOverlay: 0,
     ...sizing('cover'),
   }, { frame: 8000, minPixelRatio: 1, maxPixelCount: isPhone ? 420 * 900 : 1280 * 900 });
   if (bg) requestAnimationFrame(() => el.classList.add('is-live'));
@@ -146,10 +147,10 @@ function mountMark() {
   mark = create('mark', el, P.liquidMetalFragmentShader, {
     ...markUniforms(),
     u_image: markImage, u_isImage: true, u_shape: P.LiquidMetalShapes.none,
-    u_contour: 0.4, u_distortion: 0.07, u_softness: 0.1, u_repetition: 2,
+    u_contour: 0.6, u_distortion: 0.07, u_softness: 0.1, u_repetition: 2,
     u_shiftRed: 0.3, u_shiftBlue: 0.3, u_angle: 70,
-    ...sizing('contain', { u_scale: 0.8 }),
-  }, { frame: 2600, minPixelRatio: 2, maxPixelCount: 160 * 160, mipmaps: ['u_image'] });
+    ...sizing('contain', { u_scale: 0.92 }),
+  }, { frame: 2600, minPixelRatio: 2, maxPixelCount: 176 * 176, mipmaps: ['u_image'] });
   if (mark) {
     el.querySelector('img')?.remove();
     el.classList.remove('is-snap');
@@ -159,7 +160,7 @@ function mountMark() {
 
 /* ---------- target-reached badge ---------- */
 function showBadge(lang) {
-  const slot = document.querySelector(`.block[data-lang="${lang}"] .block-badge`);
+  const slot = document.querySelector(`.run[data-lang="${lang}"] .block-badge`);
   if (!slot || !P) return;
   destroy(badge); badge = null;
   // Free a WebGL slot: swap the logo for a still snapshot while the badge is up.
@@ -179,14 +180,15 @@ function showBadge(lang) {
   slot.classList.add('is-live');
   badge = create('badge', slot, P.liquidMetalFragmentShader, {
     u_colorBack: P.getShaderColorFromString('#00000000'),
-    u_colorTint: P.getShaderColorFromString('#5cc98a'),
+    u_colorTint: P.getShaderColorFromString(MARK_COLORS[theme()].tint),
     u_image: blankImage, u_isImage: false, u_shape: P.LiquidMetalShapes.circle,
     u_contour: 0.4, u_distortion: 0.07, u_softness: 0.1, u_repetition: 2,
     u_shiftRed: 0.3, u_shiftBlue: 0.3, u_angle: 70,
     ...sizing('contain', { u_scale: 0.75 }),
   }, { frame: 1000, minPixelRatio: 2, maxPixelCount: 96 * 96, mipmaps: ['u_image'] });
   if (badge) breathe(badge, 1, 2600);
-  setTimeout(() => {
+  clearTimeout(badgeTimer);
+  badgeTimer = setTimeout(() => {
     destroy(badge); badge = null;
     slot.classList.remove('is-live');
     mountMark();
