@@ -1,10 +1,11 @@
 {
-  "syncedAt": "2026-10-02T12:38:24Z",
+  "syncedAt": "2026-10-02T18:26:14Z",
   "since": "2026-01-01",
   "timezone": "America/New_York",
   "projects": [
     "bengali",
-    "german"
+    "german",
+    "khasi"
   ],
   "entries": [
     {
@@ -104,11 +105,27 @@
       "source": "toggl"
     },
     {
+      "id": "toggl-bengali-2026-10-02",
+      "lang": "bengali",
+      "hours": 0.37,
+      "date": "2026-10-02",
+      "note": "conversation 22m",
+      "source": "toggl"
+    },
+    {
       "id": "toggl-german-2026-10-02",
       "lang": "german",
-      "hours": 0.55,
+      "hours": 0.62,
       "date": "2026-10-02",
-      "note": "listening 33m",
+      "note": "listening 33m \u00b7 exercises 4m",
+      "source": "toggl"
+    },
+    {
+      "id": "toggl-khasi-2026-10-02",
+      "lang": "khasi",
+      "hours": 0.24,
+      "date": "2026-10-02",
+      "note": "conversation 15m",
       "source": "toggl"
     }
   ]
