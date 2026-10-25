@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-10-25T16:23:46Z",
+  "syncedAt": "2026-10-25T19:39:03Z",
   "since": "2026-01-01",
   "timezone": "America/New_York",
   "projects": [
@@ -307,9 +307,9 @@
     {
       "id": "toggl-german-2026-10-25",
       "lang": "german",
-      "hours": 1.61,
+      "hours": 1.63,
       "date": "2026-10-25",
-      "note": "listening 1h 07m \u00b7 shadow 30m",
+      "note": "listening 1h 07m \u00b7 shadow 31m",
       "source": "toggl"
     }
   ]
