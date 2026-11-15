@@ -1,5 +1,5 @@
 {
-  "syncedAt": "2026-11-14T03:18:45Z",
+  "syncedAt": "2026-11-15T22:50:11Z",
   "since": "2026-01-01",
   "timezone": "America/New_York",
   "projects": [
@@ -454,6 +454,14 @@
       "hours": 0.33,
       "date": "2026-11-13",
       "note": "anki 20m",
+      "source": "toggl"
+    },
+    {
+      "id": "toggl-german-2026-11-15",
+      "lang": "german",
+      "hours": 0.44,
+      "date": "2026-11-15",
+      "note": "conversation 14m \u00b7 anki 12m",
       "source": "toggl"
     }
   ]
